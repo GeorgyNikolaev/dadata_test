@@ -1,5 +1,6 @@
 """Web Search: Exa (основной, отдаёт полный текст страниц) и DuckDuckGo (второй индекс, сниппеты)."""
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import httpx
@@ -72,11 +73,13 @@ def ddg_search(query: str) -> list[SearchHit]:
 
 
 def _exa_safe(q: str) -> list[SearchHit]:
-    try:
-        return exa_search(q)
-    except httpx.HTTPError as e:
-        log.warning("Exa: ошибка на запросе %r: %s", q, e)
-        return []
+    for attempt in range(3):  # сетевые сбои (обрыв TLS, 5xx) — повторяем
+        try:
+            return exa_search(q)
+        except httpx.HTTPError as e:
+            log.warning("Exa: ошибка на запросе %r (попытка %d): %s", q, attempt + 1, e)
+            time.sleep(2 * (attempt + 1))
+    return []
 
 
 def search(queries: list[str]) -> list[SearchHit]:

@@ -2,6 +2,8 @@
 from datetime import datetime, timedelta, timezone
 
 from site_finder import rules
+from site_finder.candidates import is_catalog_page
+from site_finder.egrul import Company
 from site_finder.directory import Directory
 from site_finder.domains import domains_in_text, registrable
 from site_finder.inn import is_valid_inn
@@ -89,3 +91,12 @@ def test_directory_roundtrip_and_ttl(tmp_path):
     later = datetime.now(timezone.utc) + timedelta(days=31)
     assert d2.get("391709034783", now=later) is None       # "сайта нет" перепроверяется
     assert d2.get("7721581040", now=later) is not None      # найденный сайт — нет
+
+
+def test_catalog_page_detection():
+    c = Company(inn="7721581040", ogrn="5077746329876", type="LEGAL", full_name="", short_name="",
+                names=[], city=None, region=None, address=None, status=None, okved=None)
+    assert is_catalog_page("https://vembo.ru/company/5077746329876", "", c)
+    many = " ".join(["7721581040", "7707083893", "7736207543", "7710140679"])
+    assert is_catalog_page("https://example.ru/x", many, c)
+    assert not is_catalog_page("https://dadata.ru/contacts/", "ООО «Дейта Кью», ИНН 7721581040", c)
