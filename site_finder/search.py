@@ -72,14 +72,18 @@ def ddg_search(query: str) -> list[SearchHit]:
     ]
 
 
-def _exa_safe(q: str) -> list[SearchHit]:
+class SearchUnavailable(Exception):
+    """Основной поисковик не ответил ни на один запрос: ответ "сайта нет" был бы ложным."""
+
+
+def _exa_safe(q: str) -> list[SearchHit] | None:
     for attempt in range(3):  # сетевые сбои (обрыв TLS, 5xx) — повторяем
         try:
             return exa_search(q)
         except httpx.HTTPError as e:
             log.warning("Exa: ошибка на запросе %r (попытка %d): %s", q, attempt + 1, e)
             time.sleep(2 * (attempt + 1))
-    return []
+    return None
 
 
 def search(queries: list[str]) -> list[SearchHit]:
@@ -87,5 +91,7 @@ def search(queries: list[str]) -> list[SearchHit]:
     with ThreadPoolExecutor(max_workers=4) as ex:
         exa_future = ex.map(_exa_safe, queries)
         ddg_hits = [h for q in queries for h in ddg_search(q)] if config.USE_DDG else []
-        exa_hits = [h for hits in exa_future for h in hits]
-    return exa_hits + ddg_hits
+        exa_results = list(exa_future)
+    if queries and all(r is None for r in exa_results):
+        raise SearchUnavailable("Exa не ответил ни на один запрос")
+    return [h for hits in exa_results if hits for h in hits] + ddg_hits

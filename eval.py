@@ -58,6 +58,7 @@ def metrics(outcomes: list[str]) -> dict:
     n = defaultdict(int)
     for o in outcomes:
         n[o] += 1
+    outcomes = [o for o in outcomes if o != "ERROR"]  # сбои инфраструктуры не считаем ответами
     fp = n["FP_wrong"] + n["FP_nosite"]
     returned = n["TP"] + fp
     with_site = n["TP"] + n["FN"] + n["FP_wrong"]
@@ -101,7 +102,7 @@ def main() -> None:
         with ThreadPoolExecutor(max_workers=args.workers) as ex:
             done = list(ex.map(run, rows))
         for r, res, seconds in done:
-            o = outcome(res["domain"], r["truth"])
+            o = "ERROR" if "error" in res else outcome(res["domain"], r["truth"])
             trace = config.LOGS_DIR / f"{r['inn']}.json"
             t = json.loads(trace.read_text(encoding="utf-8")) if trace.exists() else {}
             results.append({

@@ -7,6 +7,7 @@ import sys
 from . import config
 from .directory import Directory
 from .pipeline import find_site
+from .search import SearchUnavailable
 
 
 def _parse_inn(raw: str) -> str:
@@ -29,7 +30,8 @@ def main() -> None:
         inn = _parse_inn(raw)
         try:
             result = find_site(inn, use_llm=not a.no_llm, directory=directory, refresh=a.refresh)
-        except ValueError as e:
+        except (ValueError, SearchUnavailable) as e:
+            # Ошибку не превращаем в {"domain": null}: это был бы ложный ответ "сайта нет".
             print(json.dumps({"inn": inn, "error": str(e)}, ensure_ascii=False))
             continue
         print(json.dumps(result if len(a.inn) == 1 else {"inn": inn, **result}, ensure_ascii=False))
