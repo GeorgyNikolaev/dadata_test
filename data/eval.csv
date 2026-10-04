@@ -25,8 +25,8 @@ inn,expected,segment,comment
 7404072081,zmk.ru,small_legal,ООО ЗМЗ
 5001149130,fullbox.ru,small_legal,ООО ФуллБокс
 1650093100,fortuna-chelny.ru,small_legal,ООО Фортуна
-6659204582,chery.sale,small_legal,ООО АЦМ (бренд Chery Sale)
-5410026749,avtoliga-jac.ru,small_legal,ООО Автолига (дилер JAC)
+6659204582,chery.sale;crossmarket.pro;uaz-ekb.ru,small_legal,ООО АЦМ (бренд Chery Sale); crossmarket.pro и uaz-ekb.ru добавлены при разборе ошибок: на них ИНН и наименование АЦМ
+5410026749,avtoliga-jac.ru;jetour-avtoligasib.ru,small_legal,ООО Автолига (дилер JAC); jetour-avtoligasib.ru добавлен при разборе ошибок: на нём ИНН Автолиги
 3662166420,doctorche.ru,small_legal,ООО МЦ Ультразвук (бренд Доктор Ч)
 5012014889,med-angara.ru,small_legal,ООО Ангара (медцентр)
 7203390951,vsestroimateriali.com,small_legal,ООО Все Стройматериалы

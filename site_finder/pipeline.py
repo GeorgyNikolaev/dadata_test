@@ -79,7 +79,10 @@ def find_site(
         t_search = time.time() - t0
         for h in hits:
             d = registrable(h.url)
-            if d and h.engine == "exa":   # у DuckDuckGo только короткий сниппет
+            # Страницы домена из выдачи — дополнительные доказательства для проверки.
+            # Карточки агрегаторов не берём: ИНН на "/id/3197573" не делает rusprofile.ru
+            # сайтом компании. У DuckDuckGo только короткий сниппет — тоже не берём.
+            if d and h.engine == "exa" and not cand.is_catalog_page(h.url, h.text, company, h.title):
                 pages_by_domain.setdefault(d, []).append({"url": h.url, "text": h.text})
         cand.collect(company, hits, pool)
         batch = cand.top(pool, config.MAX_CANDIDATES, exclude={c.domain for c in checked})
@@ -93,7 +96,10 @@ def find_site(
             fetched = [c for c in batch if c.fetched]
             tokens += llm.judge(company, fetched)
             for c in fetched:
-                c.quote_ok = quote_supported(c.evidence_quote, c.evidence_text())
+                # ИНН/ОГРН, найденные кодом на сайте, считаются подтверждёнными, даже если
+                # модель взяла их в цитату из карточки, а не из показанного ей фрагмента.
+                found = [n for n, f in ((company.inn, c.inn_found), (company.ogrn, c.ogrn_found)) if f and n]
+                c.quote_ok = quote_supported(c.evidence_quote, c.evidence_text() + " " + " ".join(found))
             for c in batch:
                 rules.decide(c)
         else:

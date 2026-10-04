@@ -99,20 +99,24 @@ def find_requisites(text: str, inn: str, ogrn: str | None, names: list[str], max
 
 
 _WORD = re.compile(r"[a-zа-я0-9]+")
-_DIGIT_GAP = re.compile(r"(?<=\d)[ \u00a0-](?=\d)")
 
 
 def quote_supported(quote: str, text: str, min_coverage: float = 0.85) -> bool:
     """Подтверждается ли цитата LLM текстом страницы (защита от выдуманных доказательств).
 
     Дословное совпадение требовать нельзя: модель переформатирует таблицы в списки, убирает
-    разметку. Поэтому проверяем по словам: все числа из цитаты (ИНН, ОГРН, телефоны) должны
-    быть в тексте, и не меньше min_coverage остальных слов — тоже."""
-    q_words = [w for w in _WORD.findall(normalize(_DIGIT_GAP.sub("", quote))) if len(w) >= 3]
-    if len(q_words) < 2:
+    разметку, а текст из Exa бывает со склеенными словами ("Наименованиекомпании"). Поэтому:
+    все числа цитаты (ИНН, ОГРН, телефоны) должны встречаться в потоке цифр страницы,
+    а не меньше min_coverage слов цитаты — в тексте страницы без пробелов и знаков."""
+    q_tokens = [w for w in _WORD.findall(normalize(quote)) if len(w) >= 3]
+    if len(q_tokens) < 2:
         return False
-    t_words = set(_WORD.findall(normalize(_DIGIT_GAP.sub("", text))))
-    numbers = [w for w in q_words if w.isdigit() and len(w) >= 5]
-    if any(n not in t_words for n in numbers):
+    digits = re.sub(r"\D", "", text)
+    letters = re.sub(r"[^a-zа-я0-9]", "", normalize(text))
+    numbers = [w for w in q_tokens if w.isdigit()]
+    if any(n not in digits for n in numbers if len(n) >= 5):
         return False
-    return sum(w in t_words for w in q_words) / len(q_words) >= min_coverage
+    words = [w for w in q_tokens if not w.isdigit()]
+    if not words:
+        return True
+    return sum(w in letters for w in words) / len(words) >= min_coverage

@@ -66,6 +66,10 @@ def test_quote_check():
     assert not quote_supported("Публичное акционерное общество «Сбербанк России» ИНН 7707083890", page)
     # выдуманный текст — нет
     assert not quote_supported("Официальный сайт ООО Ромашка, все права защищены", page)
+    # склеенные слова в тексте Exa и соседние числа, которые нельзя склеивать
+    glued = "Наименованиекомпанииполное — ПАО «Газпром» ОГРН 1027700070518 ИНН 7736050003"
+    assert quote_supported("Наименование компании полное — ПАО «Газпром» ОГРН — 1027700070518 ИНН — 7736050003", glued)
+    assert quote_supported("Moscow, Arbat Str., 10 1027700092661", "Moscow, Arbat Str., 10 OGRN 1027700092661")
 
 
 def _cand(**kw) -> Candidate:
@@ -117,4 +121,6 @@ def test_catalog_page_detection():
     assert is_catalog_page("https://vembo.ru/company/5077746329876", "", c)
     many = " ".join(["7721581040", "7707083893", "7736207543", "7710140679"])
     assert is_catalog_page("https://example.ru/x", many, c)
+    assert is_catalog_page("https://www.rusprofile.ru/id/3197573", "", c)
+    assert is_catalog_page("https://example.ru/x", "", c, title="ООО Дейта Кью ИНН 7721581040")
     assert not is_catalog_page("https://dadata.ru/contacts/", "ООО «Дейта Кью», ИНН 7721581040", c)
