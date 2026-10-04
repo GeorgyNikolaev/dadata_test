@@ -15,7 +15,7 @@ from .directory import Directory
 from .domains import registrable
 from .egrul import CompanyNotFound, get_company
 from .inn import is_valid_inn
-from .matching import name_variants, quote_in_text
+from .matching import name_variants, quote_supported
 from .models import Candidate
 
 log = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ def find_site(
             fetched = [c for c in batch if c.fetched]
             tokens += llm.judge(company, fetched)
             for c in fetched:
-                c.quote_ok = quote_in_text(c.evidence_quote, c.evidence_text())
+                c.quote_ok = quote_supported(c.evidence_quote, c.evidence_text())
             for c in batch:
                 rules.decide(c)
         else:

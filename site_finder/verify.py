@@ -5,6 +5,7 @@
 """
 import logging
 import re
+import time
 from urllib.parse import urljoin, urlsplit
 
 import httpx
@@ -25,7 +26,7 @@ _SUBPAGE_PATTERNS = [
     re.compile(p, re.I) for p in (
         r"реквизит|requisit|rekvizit",
         r"контакт|contact|kontakt",
-        r"о компании|о нас|about|o-kompanii|company",
+        r"о компании|о нас|about|o-kompanii|/company/?$",
         r"политик|конфиденц|персональн|privacy|policy|politika",
         r"оферт|oferta|offer",
     )
@@ -33,6 +34,9 @@ _SUBPAGE_PATTERNS = [
 _GUESS_PATHS = ["/contacts", "/kontakty", "/about", "/rekvizity"]
 _MIN_TEXT = 300
 _MAX_PAGE_CHARS = 60000
+_MAX_BYTES = 3_000_000
+_PAGE_DEADLINE = 15.0   # секунд на одну страницу
+_SITE_BUDGET = 30.0     # секунд на весь сайт (главная + подстраницы)
 
 
 def _parse(html: bytes) -> tuple[str, str, list[tuple[str, str]]]:
@@ -63,11 +67,20 @@ def _pick_subpages(base_url: str, links: list[tuple[str, str]], site: str) -> li
     return found
 
 
-def _get(client: httpx.Client, url: str) -> httpx.Response | None:
+def _get(client: httpx.Client, url: str) -> tuple[str, bytes] | None:
+    """GET с общим дедлайном и лимитом размера: таймаут httpx действует на каждую операцию
+    чтения, и сервер, отдающий страницу по байту, может держать соединение бесконечно."""
     try:
-        r = client.get(url)
-        if r.status_code == 200 and "html" in r.headers.get("content-type", "html"):
-            return r
+        with client.stream("GET", url) as r:
+            if r.status_code != 200 or "html" not in r.headers.get("content-type", "html"):
+                return None
+            buf = bytearray()
+            started = time.monotonic()
+            for chunk in r.iter_bytes():
+                buf += chunk
+                if len(buf) > _MAX_BYTES or time.monotonic() - started > _PAGE_DEADLINE:
+                    break
+            return str(r.url), bytes(buf)
     except httpx.HTTPError as e:
         log.debug("fetch %s: %s", url, e)
     return None
@@ -76,21 +89,24 @@ def _get(client: httpx.Client, url: str) -> httpx.Response | None:
 def _fetch_http(domain: str) -> dict | None:
     with httpx.Client(follow_redirects=True, timeout=config.HTTP_TIMEOUT,
                       headers={"User-Agent": _UA, "Accept-Language": "ru,en;q=0.8"}) as client:
+        started = time.monotonic()
         home = None
         for url in (f"https://{domain}/", f"https://www.{domain}/", f"http://{domain}/"):
             home = _get(client, url)
-            if home:
+            if home or time.monotonic() - started > _SITE_BUDGET:
                 break
         if not home:
             return None
-        final_url = str(home.url)
+        final_url, html = home
         site = registrable(final_url) or domain
-        title, text, links = _parse(home.content)
+        title, text, links = _parse(html)
         pages = [{"url": final_url, "text": text}]
         for sub in _pick_subpages(final_url, links, site):
+            if time.monotonic() - started > _SITE_BUDGET:
+                break
             r = _get(client, sub)
             if r:
-                pages.append({"url": str(r.url), "text": _parse(r.content)[1]})
+                pages.append({"url": r[0], "text": _parse(r[1])[1]})
         return {"final_domain": site, "title": title, "pages": pages, "via": "http"}
 
 

@@ -12,7 +12,7 @@ def decide(c: Candidate) -> None:
     elif c.verdict not in (OWN_SITE, GROUP_SITE):
         c.accepted, c.decision = False, f"вердикт LLM: {c.verdict}"
     elif not c.quote_ok:
-        c.accepted, c.decision = False, "цитата LLM не найдена в тексте страницы"
+        c.accepted, c.decision = False, "цитата LLM не подтверждается текстом страницы"
     elif c.requisites_found:
         c.accepted, c.decision = True, "ИНН/ОГРН на сайте + подтверждение LLM"
     elif c.verdict == OWN_SITE and c.name_found and c.independent_signal:

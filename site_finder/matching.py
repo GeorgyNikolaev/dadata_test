@@ -94,7 +94,21 @@ def find_requisites(text: str, inn: str, ogrn: str | None, names: list[str], max
     return m
 
 
-def quote_in_text(quote: str, text: str) -> bool:
-    """Проверка, что цитата от LLM действительно есть в тексте (защита от выдуманных цитат)."""
-    q = normalize(quote)
-    return len(q) >= 5 and q in normalize(text)
+_WORD = re.compile(r"[a-zа-я0-9]+")
+_DIGIT_GAP = re.compile(r"(?<=\d)[ \u00a0-](?=\d)")
+
+
+def quote_supported(quote: str, text: str, min_coverage: float = 0.85) -> bool:
+    """Подтверждается ли цитата LLM текстом страницы (защита от выдуманных доказательств).
+
+    Дословное совпадение требовать нельзя: модель переформатирует таблицы в списки, убирает
+    разметку. Поэтому проверяем по словам: все числа из цитаты (ИНН, ОГРН, телефоны) должны
+    быть в тексте, и не меньше min_coverage остальных слов — тоже."""
+    q_words = [w for w in _WORD.findall(normalize(_DIGIT_GAP.sub("", quote))) if len(w) >= 3]
+    if len(q_words) < 2:
+        return False
+    t_words = set(_WORD.findall(normalize(_DIGIT_GAP.sub("", text))))
+    numbers = [w for w in q_words if w.isdigit() and len(w) >= 5]
+    if any(n not in t_words for n in numbers):
+        return False
+    return sum(w in t_words for w in q_words) / len(q_words) >= min_coverage

@@ -60,7 +60,7 @@ def ddg_search(query: str) -> list[SearchHit]:
     if data is None:
         try:
             from ddgs import DDGS
-            data = DDGS().text(query, region="ru-ru", max_results=config.SEARCH_RESULTS) or []
+            data = DDGS(timeout=10).text(query, region="ru-ru", max_results=config.SEARCH_RESULTS) or []
         except Exception as e:  # неофициальный API: rate limit, смена разметки и т.п.
             log.warning("DuckDuckGo недоступен (%s): %s", query, e)
             return []

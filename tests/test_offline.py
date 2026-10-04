@@ -7,7 +7,7 @@ from site_finder.egrul import Company
 from site_finder.directory import Directory
 from site_finder.domains import domains_in_text, registrable
 from site_finder.inn import is_valid_inn
-from site_finder.matching import find_requisites, name_variants, quote_in_text
+from site_finder.matching import find_requisites, name_variants, quote_supported
 from site_finder.models import OWN_SITE, THIRD_PARTY, Candidate
 
 
@@ -52,8 +52,13 @@ def test_individual_name_variants():
 
 
 def test_quote_check():
-    assert quote_in_text("ИНН  7721581040", "Реквизиты: ООО «Дейта Кью», ИНН 7721581040")
-    assert not quote_in_text("ИНН 0000000000", "Реквизиты: ИНН 7721581040")
+    page = "| Полное наименование | Публичное акционерное общество «Сбербанк России» | | ИНН | 7 707 083 893 |"
+    # таблица, переписанная моделью в список, — подтверждается
+    assert quote_supported("Полное наименование: Публичное акционерное общество «Сбербанк России» - ИНН: 7707083893", page)
+    # выдуманный ИНН — нет
+    assert not quote_supported("Публичное акционерное общество «Сбербанк России» ИНН 7707083890", page)
+    # выдуманный текст — нет
+    assert not quote_supported("Официальный сайт ООО Ромашка, все права защищены", page)
 
 
 def _cand(**kw) -> Candidate:
