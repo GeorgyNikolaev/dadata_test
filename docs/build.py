@@ -32,18 +32,17 @@ def load(name: str) -> list[dict]:
 
 def modes_table(rows: list[dict]) -> str:
     out = ["<table><tr><th>Режим</th><th>precision</th><th>recall</th><th>верные null</th><th>accuracy</th>"
-           "<th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>с/ИНН*</th><th>токенов/ИНН</th></tr>"]
+           "<th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>токенов/ИНН</th></tr>"]
     for mode in ("full", "no_retry", "no_llm"):
         rs = [r for r in rows if r["mode"] == mode]
         if not rs:
             continue
         m = metrics([r["outcome"] for r in rs])
-        sec = sum(float(r["seconds"]) for r in rs) / len(rs)
         tok = sum(int(r["llm_tokens"]) for r in rs) / len(rs)
         out.append(f"<tr><td>{MODE_NAMES[mode]}</td><td class=n>{pct(m['precision'])}</td><td class=n>{pct(m['recall'])}</td>"
                    f"<td class=n>{pct(m['null_acc'])}</td><td class=n>{pct(m['accuracy'])}</td>"
                    f"<td class=n>{m['TP']}</td><td class=n>{m['FP']}</td><td class=n>{m['FN']}</td><td class=n>{m['TN']}</td>"
-                   f"<td class=n>{sec:.0f}</td><td class=n>{tok:.0f}</td></tr>")
+                   f"<td class=n>{tok:.0f}</td></tr>")
     out.append("</table>")
     return "".join(out)
 
@@ -70,11 +69,10 @@ def main() -> None:
     args = ap.parse_args()
 
     dev, hold = load("eval"), load("holdout")
-    combined = [r for r in dev + hold]
     analysis = (ROOT / "docs" / "eval_analysis.html").read_text(encoding="utf-8")
     eval_html = analysis.format(
         dev_n=len({r["inn"] for r in dev}), hold_n=len({r["inn"] for r in hold}),
-        dev_modes=modes_table(dev), hold_modes=modes_table(hold), segments=segments_table(combined),
+        dev_modes=modes_table(dev), hold_modes=modes_table(hold), segments=segments_table(hold),
     )
     task2 = (ROOT / "docs" / "task2.html").read_text(encoding="utf-8").replace("{{EVAL}}", eval_html)
     t1_evidence = (ROOT / "docs" / "t1_evidence.html").read_text(encoding="utf-8").strip()

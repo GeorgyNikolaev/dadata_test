@@ -1,20 +1,20 @@
 inn,expected,segment,comment
 7708004767,lukoil.ru;lukoil.com,large,ПАО Лукойл
 7812014560,megafon.ru,large,ПАО Мегафон
-7702070139,vtb.ru,large,Банк ВТБ (ПАО)
+7702070139,vtb.ru;втб.рф,large,Банк ВТБ (ПАО); втб.рф добавлен при проверке ответов: на сайте ИНН организации в роли владельца/продавца
 7728168971,alfabank.ru,large,АО Альфа-Банк
 7703270067,auchan.ru,large,ООО Ашан
 7721546864,wildberries.ru;wb.ru;rwb.ru,large,ООО Вайлдберриз
 7743133998,arkhangelskiles.ru,small_legal,ООО Архангельский лес
 2317010611,adlerkurortsochi.ru,small_legal,АО Адлеркурорт
-7734367277,hosta-gostinica.ru;start-sochi.ru;waterloo-sochi.ru,small_legal,ООО Центр гостиничных решений: один ИНН — несколько сайтов гостиниц
+7734367277,hosta-gostinica.ru;start-sochi.ru;waterloo-sochi.ru;центр-гостиничных-решений.рф;chehov-api.ru,small_legal,ООО Центр гостиничных решений: один ИНН — несколько сайтов гостиниц; центр-гостиничных-решений.рф и chehov-api.ru добавлен при проверке ответов: на сайте ИНН организации в роли владельца/продавца
 2466106045,renome-a.ru,small_legal,ООО Бухгалтерская группа Реноме
 7203260575,sst72.ru,small_legal,ООО Спецстройтехника
-7203561702,спецтех72.рф,small_legal,ООО Рандекс Групп (бренд Спецтех72); кириллический домен
+7203561702,спецтех72.рф;randexgroup.ru,small_legal,ООО Рандекс Групп (бренд Спецтех72); randexgroup.ru добавлен при проверке ответов: на сайте ИНН организации в роли владельца/продавца
 3904095756,expert.school,small_legal,НОЧУ ДО Эксперт (языковая школа)
 7731378577,afitron.ru,small_legal,ООО Афанти Девайс Лимитед (бренд Afitron)
 3662222970,eltix.ru,small_legal,ООО Компания Элтикс
-1841008095,apple-nova.ru;tecnostore.ru,small_legal,ООО ГК Премьер: два интернет-магазина
+1841008095,apple-nova.ru;tecnostore.ru;xiaomiexclusive.ru,small_legal,ООО ГК Премьер: несколько интернет-магазинов; xiaomiexclusive.ru добавлен при проверке ответов: на сайте ИНН организации в роли владельца/продавца
 7730234438,regard.ru,small_legal,ООО Регард МСК
 7722369569,cifrus.ru,small_legal,ООО Онлайнмаркет (бренд Cifrus)
 772146759850,lcake.ru,ip_site,ИП Вдовина Л.А. (кондитер)
@@ -23,7 +23,7 @@ inn,expected,segment,comment
 701717353064,dmitryspirit.com,ip_site,ИП Федянина Т.Л.
 120701988200,olgakrasnova.ru,ip_site,ИП Краснова О.В.
 772322377697,sotvorchestvo21.ru;сотворчество.рф,ip_site,ИП Калмыкова А.М.: два сайта
-030619851743,evgeniya-rez.ru,ip_site,ИП Резниченко Е.А.
+030619851743,evgeniya-rez.ru;evgeniyarez.ru,ip_site,ИП Резниченко Е.А.; evgeniyarez.ru добавлен при проверке ответов: на сайте ИНН организации в роли владельца/продавца
 614315596299,avtofurgonremont.ru,ip_site,ИП Игнаткин Г.А. (ремонт фургонов)
 #783901491303,master-ocipov.ru,ip_site,ИП Осипов Е.А.: ИП ликвидирован, сайт с ИНН работает — спорный случай; исключён
 5254493214,,random_legal,ООО Лидер (Саров)

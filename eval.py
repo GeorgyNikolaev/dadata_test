@@ -82,10 +82,23 @@ def main() -> None:
     ap.add_argument("--data", default=str(ROOT / "data" / "eval.csv"))
     ap.add_argument("--modes", default="full,no_retry,no_llm")
     ap.add_argument("--workers", type=int, default=4, help="сколько ИНН обрабатывать параллельно")
+    ap.add_argument("--rescore", action="store_true", help="пересчитать метрики по сохранённым ответам и текущей разметке")
     args = ap.parse_args()
 
-    data = Path(args.data)
+    data = Path(args.data).resolve()
     rows = load(data)
+    out = data.with_name(f"{data.stem}_results.csv")
+    if args.rescore:
+        # Пересчёт исходов по сохранённым ответам и текущей разметке — без новых запросов.
+        truth = {r["inn"]: r for r in rows}
+        with open(out, encoding="utf-8") as f:
+            results = [x for x in csv.DictReader(f) if x["inn"] in truth]
+        for x in results:
+            x["expected"] = truth[x["inn"]]["expected"]
+            if x["outcome"] != "ERROR":
+                x["outcome"] = outcome(x["domain"] or None, truth[x["inn"]]["truth"])
+        _write_and_report(results, out, args.modes.split(","), data)
+        return
     results = []
     logs_root = config.LOGS_DIR
     for mode in args.modes.split(","):
@@ -113,7 +126,10 @@ def main() -> None:
             })
             print(f"[{mode}] {r['inn']} {r['segment']:<10} {o}  pred={res['domain']}  expected={r['expected'] or 'null'}")
 
-    out = data.with_name(f"{data.stem}_results.csv")
+    _write_and_report(results, out, args.modes.split(","), data)
+
+
+def _write_and_report(results: list[dict], out: Path, modes: list[str], data: Path) -> None:
     with open(out, "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(results[0]))
         w.writeheader()
@@ -122,11 +138,11 @@ def main() -> None:
     # Сводные таблицы: по режимам и по сегментам (для полного режима).
     cols = ["n", "precision", "recall", "null_acc", "accuracy", "TP", "FP", "FN", "TN"]
     print("\n| режим | " + " | ".join(cols) + " |\n|" + "---|" * (len(cols) + 1))
-    for mode in args.modes.split(","):
+    for mode in modes:
         m = metrics([x["outcome"] for x in results if x["mode"] == mode])
         print(f"| {mode} | " + " | ".join(fmt(m[c]) for c in cols) + " |")
 
-    main_mode = args.modes.split(",")[0]
+    main_mode = modes[0]
     print(f"\nПо сегментам ({main_mode}):\n| сегмент | " + " | ".join(cols) + " |\n|" + "---|" * (len(cols) + 1))
     for seg in sorted({x["segment"] for x in results}):
         m = metrics([x["outcome"] for x in results if x["mode"] == main_mode and x["segment"] == seg])
