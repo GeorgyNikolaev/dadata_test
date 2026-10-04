@@ -5,6 +5,7 @@
 """
 import json
 import logging
+import threading
 
 from gigachat import GigaChat
 
@@ -67,6 +68,9 @@ _QUERIES_FN = {
 }
 
 _client: GigaChat | None = None
+# Бесплатный тариф GigaChat допускает один одновременный запрос (иначе 429):
+# при параллельной обработке ИНН вызовы LLM идут по очереди, поиск и загрузка — параллельно.
+_LLM_LOCK = threading.Lock()
 
 
 class LLMRefusal(Exception):
@@ -82,6 +86,9 @@ def _gigachat() -> GigaChat:
             model=config.GIGACHAT_MODEL,
             ca_bundle_file=str(config.RUSSIAN_CA),
             timeout=120,
+            max_retries=4,
+            retry_backoff_factor=2.0,
+            retry_on_status_codes=(429, 500, 502, 503, 504),
         )
     return _client
 
@@ -91,12 +98,13 @@ def _call(system: str, user: str, fn: dict) -> dict:
     cached = cache.get(key)
     if cached is not None:
         return cached
-    resp = _gigachat().chat({
-        "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        "functions": [fn],
-        "function_call": {"name": fn["name"]},
-        "temperature": 0.0,
-    })
+    with _LLM_LOCK:
+        resp = _gigachat().chat({
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "functions": [fn],
+            "function_call": {"name": fn["name"]},
+            "temperature": 0.0,
+        })
     choice = resp.choices[0]
     msg = choice.message
     if not msg.function_call:

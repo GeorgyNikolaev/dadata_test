@@ -22,6 +22,7 @@ import csv
 import json
 import time
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from site_finder import config
@@ -79,6 +80,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=str(ROOT / "data" / "eval.csv"))
     ap.add_argument("--modes", default="full,no_retry,no_llm")
+    ap.add_argument("--workers", type=int, default=4, help="сколько ИНН обрабатывать параллельно")
     args = ap.parse_args()
 
     data = Path(args.data)
@@ -87,13 +89,18 @@ def main() -> None:
     logs_root = config.LOGS_DIR
     for mode in args.modes.split(","):
         config.LOGS_DIR = logs_root / data.stem / mode
-        for r in rows:
+        def run(r: dict) -> tuple[dict, dict, float]:
             t0 = time.time()
             try:
                 res = find_site(r["inn"], directory=None, **MODES[mode])
             except Exception as e:  # оценка не должна падать из-за одного ИНН
                 print(f"[{mode}] {r['inn']}: ошибка {e!r}")
                 res = {"domain": None, "sites": [], "error": repr(e)}
+            return r, res, time.time() - t0
+
+        with ThreadPoolExecutor(max_workers=args.workers) as ex:
+            done = list(ex.map(run, rows))
+        for r, res, seconds in done:
             o = outcome(res["domain"], r["truth"])
             trace = config.LOGS_DIR / f"{r['inn']}.json"
             t = json.loads(trace.read_text(encoding="utf-8")) if trace.exists() else {}
@@ -101,7 +108,7 @@ def main() -> None:
                 "mode": mode, "inn": r["inn"], "segment": r["segment"], "expected": r["expected"],
                 "domain": res["domain"] or "", "sites": ";".join(res["sites"]), "outcome": o,
                 "llm_tokens": t.get("llm_tokens", 0), "iterations": len(t.get("iterations", [])),
-                "seconds": round(time.time() - t0, 1),
+                "seconds": round(seconds, 1),
             })
             print(f"[{mode}] {r['inn']} {r['segment']:<10} {o}  pred={res['domain']}  expected={r['expected'] or 'null'}")
 
