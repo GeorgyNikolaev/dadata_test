@@ -1,0 +1,23 @@
+[project]
+name = "site-finder"
+version = "0.1.0"
+description = "Поиск основного сайта российской организации по ИНН: Web Search + LLM"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "gigachat>=0.1.39",
+    "tldextract>=5.1",
+    "selectolax>=0.3.21",
+    "python-dotenv>=1.0",
+    "ddgs>=9.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["site_finder"]
