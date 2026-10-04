@@ -28,7 +28,7 @@ def decide_without_llm(c: Candidate) -> None:
 
 
 def pick_main(accepted: list[Candidate]) -> Candidate | None:
-    """Основной сайт: сначала с реквизитами на сайте, затем — по силе сигнала из поиска."""
+    """Основной сайт: собственный сайт важнее сайта группы; затем — с реквизитами; затем — по силе сигнала из поиска."""
     if not accepted:
         return None
-    return sorted(accepted, key=lambda c: (not c.requisites_found, c.verdict != OWN_SITE, -c.score, c.best_rank))[0]
+    return sorted(accepted, key=lambda c: (c.verdict != OWN_SITE, not c.requisites_found, -c.score, c.best_rank))[0]

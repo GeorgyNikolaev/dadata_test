@@ -21,12 +21,16 @@ def _digits_pattern(number: str) -> re.Pattern:
     return re.compile(r"(?<!\d)" + r"[  ]?".join(number) + r"(?!\d)")
 
 
-def name_variants(names: list[str], company_type: str) -> list[str]:
+def name_variants(names: list[str], company_type: str, short_with_opf: str = "") -> list[str]:
     """Нормализованные варианты названия, по которым ищем на странице.
 
-    Короткие (< 4 символов) отбрасываем: "Альфа" ещё можно, "АБВ" даёт ложные совпадения.
+    Короткие (< 4 символов) без ОПФ отбрасываем: "РЖД" или "МТС" сами по себе дают ложные
+    совпадения, поэтому для них используется форма с ОПФ ("ОАО РЖД", "ПАО МТС").
     Для ИП добавляем форму "Фамилия И. О." / "Фамилия И.О."."""
     out: list[str] = []
+    with_opf = normalize(short_with_opf)
+    if company_type != "INDIVIDUAL" and len(with_opf) >= 6:
+        out.append(with_opf)
     for n in names:
         v = _OPF.sub("", normalize(n))
         if len(v) >= 4 and v not in out:

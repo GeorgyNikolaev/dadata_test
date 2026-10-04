@@ -14,7 +14,8 @@
 Справочник отключён: каждый ИНН ищется заново. Внешние ответы кэшируются,
 поэтому повторный прогон и сравнение режимов почти ничего не стоят.
 
-Запуск: uv run python eval.py [--modes full,no_retry,no_llm]
+Запуск: uv run python eval.py [--data data/holdout.csv] [--modes full,no_retry,no_llm]
+data/eval.csv — выборка для разработки (на ней разбирались ошибки), data/holdout.csv — отложенная.
 """
 import argparse
 import csv
@@ -80,11 +81,12 @@ def main() -> None:
     ap.add_argument("--modes", default="full,no_retry,no_llm")
     args = ap.parse_args()
 
-    rows = load(Path(args.data))
+    data = Path(args.data)
+    rows = load(data)
     results = []
     logs_root = config.LOGS_DIR
     for mode in args.modes.split(","):
-        config.LOGS_DIR = logs_root / "eval" / mode
+        config.LOGS_DIR = logs_root / data.stem / mode
         for r in rows:
             t0 = time.time()
             try:
@@ -103,7 +105,7 @@ def main() -> None:
             })
             print(f"[{mode}] {r['inn']} {r['segment']:<10} {o}  pred={res['domain']}  expected={r['expected'] or 'null'}")
 
-    out = ROOT / "data" / "eval_results.csv"
+    out = data.with_name(f"{data.stem}_results.csv")
     with open(out, "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(results[0]))
         w.writeheader()
@@ -121,7 +123,7 @@ def main() -> None:
     for seg in sorted({x["segment"] for x in results}):
         m = metrics([x["outcome"] for x in results if x["mode"] == main_mode and x["segment"] == seg])
         print(f"| {seg} | " + " | ".join(fmt(m[c]) for c in cols) + " |")
-    print(f"\nДетали: {out.relative_to(ROOT)}, трассировки: logs/eval/<режим>/<ИНН>.json")
+    print(f"\nДетали: {out.relative_to(ROOT)}, трассировки: logs/{data.stem}/<режим>/<ИНН>.json")
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from site_finder.directory import Directory
 from site_finder.domains import domains_in_text, registrable
 from site_finder.inn import is_valid_inn
 from site_finder.matching import find_requisites, name_variants, quote_supported
-from site_finder.models import OWN_SITE, THIRD_PARTY, Candidate
+from site_finder.models import GROUP_SITE, OWN_SITE, THIRD_PARTY, Candidate
 
 
 def test_inn_checksum():
@@ -44,6 +44,13 @@ def test_find_requisites_with_spaces_and_name():
 def test_inn_not_matched_inside_longer_number():
     m = find_requisites("счёт 4077215810400000", "7721581040", None, [])
     assert not m.inn_found
+
+
+def test_short_name_matched_with_opf():
+    v = name_variants(["РЖД", "РОССИЙСКИЕ ЖЕЛЕЗНЫЕ ДОРОГИ"], "LEGAL", 'ОАО "РЖД"')
+    assert "ржд" not in v
+    assert find_requisites('Центр поддержки ОАО "РЖД"', "7708503727", None, v).name_found
+    assert not find_requisites("Билеты РЖД онлайн", "7708503727", None, v).name_found
 
 
 def test_individual_name_variants():
@@ -83,6 +90,12 @@ def test_pick_main_prefers_requisites():
     a = _cand(domain="a.ru", name_found=True, score=10)
     b = _cand(domain="b.ru", inn_found=True, score=1)
     assert rules.pick_main([a, b]).domain == "b.ru"
+
+
+def test_pick_main_prefers_own_site_over_group():
+    own = _cand(domain="tbank.ru", name_found=True, score=3)
+    group = _cand(domain="group.ru", inn_found=True, verdict=GROUP_SITE, score=5)
+    assert rules.pick_main([group, own]).domain == "tbank.ru"
 
 
 def test_directory_roundtrip_and_ttl(tmp_path):

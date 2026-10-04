@@ -63,7 +63,7 @@ def find_site(
         _write_trace(inn, trace)
         return result
     trace["company"] = asdict(company)
-    names = name_variants(company.names, company.type)
+    names = name_variants(company.names, company.type, company.short_name)
 
     pool: dict[str, Candidate] = {}
     checked: list[Candidate] = []
